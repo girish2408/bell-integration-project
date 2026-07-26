@@ -2,7 +2,8 @@
 
 A full-stack payments dashboard: NestJS API + React SPA, spec-driven, deployed as one Railway service.
 
-**Live:** `https://<your-service>.up.railway.app` *(fill in after deploy)*
+**Live:** https://payments-dashboard-production-bd50.up.railway.app  
+**Repo:** https://github.com/girish2408/bell-integration-project
 
 ---
 
