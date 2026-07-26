@@ -1,0 +1,25 @@
+{
+  "name": "payments-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Full-stack payments dashboard — NestJS API + React/TS SPA, one Railway service.",
+  "engines": {
+    "node": ">=20"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @pay/contracts && npm run build -w @pay/api && npm run build -w @pay/web",
+    "start": "node apps/api/dist/main.js",
+    "dev": "concurrently -n contracts,api,web -c gray,cyan,magenta \"npm run dev -w @pay/contracts\" \"npm run dev -w @pay/api\" \"npm run dev -w @pay/web\"",
+    "test": "npm run test -w @pay/api && npm run test -w @pay/web",
+    "typecheck": "tsc -b --pretty",
+    "clean": "rm -rf apps/*/dist packages/*/dist node_modules"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "typescript": "^5.6.3"
+  }
+}

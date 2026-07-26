@@ -1,0 +1,144 @@
+openapi: 3.1.0
+info:
+  title: Payments Dashboard API
+  version: 1.0.0
+  description: >
+    Read-only payments listing for the operations dashboard. Amounts are integers in the
+    minor unit of the payment currency. Errors follow RFC 9457 (problem+json).
+
+servers:
+  - url: /api
+    description: Same-origin path prefix. The SPA and the API share one deployment.
+
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Liveness probe used by the Railway health check
+      responses:
+        "200":
+          description: Service is up
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    const: ok
+
+  /payments:
+    get:
+      operationId: listPayments
+      summary: List payments, newest first, optionally filtered by status
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: >
+            Filter by payment status. Omitted or `all` returns every payment.
+            Any other value is rejected with 400.
+          schema:
+            $ref: "#/components/schemas/StatusFilter"
+      responses:
+        "200":
+          description: Payment list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentListResponse"
+        "400":
+          description: Invalid query parameter
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              example:
+                type: "about:blank"
+                title: "Invalid query parameter"
+                status: 400
+                detail: "'status' must be one of: all, pending, approved, rejected"
+                instance: "/api/payments"
+        "500":
+          description: Unexpected server error
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+components:
+  schemas:
+    PaymentStatus:
+      type: string
+      enum: [pending, approved, rejected]
+      description: The lifecycle state of a payment. Never includes `all`.
+
+    StatusFilter:
+      type: string
+      enum: [all, pending, approved, rejected]
+      default: all
+      description: Query-side vocabulary only. Distinct from PaymentStatus by design.
+
+    Currency:
+      type: string
+      enum: [AED, USD, EUR, GBP]
+      description: ISO 4217 alphabetic code, uppercase.
+
+    Payment:
+      type: object
+      required: [id, amountMinor, currency, status, createdAt]
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: "^pay_[A-Za-z0-9]{10,}$"
+          examples: ["pay_01HQ9XKT4M"]
+        amountMinor:
+          type: integer
+          minimum: 0
+          description: >
+            Amount in the minor unit of `currency` (fils, cents, pence).
+            1250 with currency AED means AED 12.50. Never a decimal.
+          examples: [1250]
+        currency:
+          $ref: "#/components/schemas/Currency"
+        status:
+          $ref: "#/components/schemas/PaymentStatus"
+        createdAt:
+          type: string
+          format: date-time
+          description: ISO 8601 instant in UTC, with a trailing Z.
+          examples: ["2026-07-14T09:31:00.000Z"]
+
+    PaymentListResponse:
+      type: object
+      required: [items, total]
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Payment"
+          description: Sorted by createdAt descending.
+        total:
+          type: integer
+          minimum: 0
+          description: Number of items returned after filtering.
+
+    Problem:
+      type: object
+      description: RFC 9457 problem detail.
+      required: [title, status]
+      properties:
+        type:
+          type: string
+          default: "about:blank"
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
